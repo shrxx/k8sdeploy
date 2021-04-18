@@ -1,0 +1,10 @@
+---
+ansible_ssh_user: "{{user}}"
+ansible_sudo_pass: "{{sudo_password}}"
+become: yes
+become_method: sudo
+become_user: root
+master_ip: "{{master_ip}}"
+# master_ip: "{{ groups['master'][0] }}"
+pg_namespace: "{{pg_namespace}}"
+

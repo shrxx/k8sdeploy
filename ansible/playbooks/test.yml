@@ -1,0 +1,13 @@
+---                           
+#                             
+# [Playbook] Test run
+#
+# Test run playbook
+#                             
+- name: Test Run
+  hosts:                      
+    - k8s_cluster
+  gather_facts: True          
+  become: yes                 
+  roles:                      
+    - test_ping

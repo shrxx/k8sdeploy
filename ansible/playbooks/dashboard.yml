@@ -1,0 +1,10 @@
+---
+# [Playbook] Deploy new K8S cluster
+
+- name: Deploying kubernetes dashboard
+  hosts:
+    - masters
+  gather_facts: True
+  become: yes
+  roles:
+    - dashboard

@@ -1,0 +1,48 @@
+---
+
+- name: Copy dashboard manifest
+  copy:
+    src: "{{ dashboard_manifest }}"
+    dest: "{{ user_home }}/{{ dashboard_manifest }}"
+
+- name: Copy dashboard service account
+  copy:
+    src: "{{ dashboard_service_account }}"
+    dest: "{{ user_home }}/{{ dashboard_service_account }}"
+
+- name: Copy dashboard cluster-admin role manifest
+  copy:
+    src: "{{ dashboard_cluster_admin_role }}"
+    dest: "{{ user_home }}/{{ dashboard_cluster_admin_role }}"
+
+- name: Copy dashboard ingress manifest
+  copy:
+    src: "{{ dashboard_ingress }}"
+    dest: "{{ user_home }}/{{ dashboard_ingress }}"
+
+- name: Deploy dashboard
+  shell: |
+    kubectl --kubeconfig={{ kubeadmin_config }} \
+      apply -f "{{ user_home }}/{{ dashboard_manifest }}"
+  register: deploy_dashboard 
+
+- name: Remove standard dashboard role
+  when: deploy_dashboard is succeeded
+  shell: |
+    kubectl --kubeconfig={{ kubeadmin_config }} \ 
+      delete clusterrolebinding kubernetes-dashboard
+
+- name: Create Service Account
+  shell: |
+    kubectl --kubeconfig={{ kubeadmin_config }} \
+      create -f {{user_home}}/{{ dashboard_service_account }}
+
+- name: Create Admin role binding
+  shell: |
+    kubectl --kubeconfig={{ kubeadmin_config }} \
+      create -f {{user_home}}/{{ dashboard_cluster_admin_role }}
+
+- name: Deploy ingress
+  shell: |
+    kubectl --kubeconfig={{ kubeadmin_config }} \
+      create -f {{user_home}}/{{ dashboard_ingress }}

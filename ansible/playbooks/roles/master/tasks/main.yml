@@ -1,0 +1,54 @@
+---
+
+- name: Copy flannel config
+  copy:
+    src: "{{ flannel_manifest }}"
+    dest: "{{ user_home }}/{{ flannel_manifest }}"
+  register: copy_flannel_manifest
+
+- name: Initializing control-plane node with enabled NumCPU
+  when: ansible_processor_cores == 1
+  shell: |
+    kubeadm init --pod-network-cidr={{ pod_network_cidr }} \
+                 --apiserver-advertise-address={{ master_ip }} \ 
+                 --ignore-preflight-errors=NumCPU
+  register: init_cluster
+
+- name: Initializing control-plane node
+  when: ansible_processor_cores > 1
+  shell: |
+    kubeadm init --pod-network-cidr={{ pod_network_cidr }} \
+                 --apiserver-advertise-address={{ master_ip }} 
+  register: init_cluster
+
+- name: Pause for 3 minutes to wait when control plane will be initialized
+  pause:
+    minutes: 3
+
+- name: Create Kubernetes config directory
+  when: init_cluster is succeeded
+  file:
+    path: "{{ user_home }}/.kube/"
+    state: directory
+    mode: 0755
+
+- name: Copy admin.conf to Home directory
+  copy:
+    src: "{{ kubeadmin_config }}"
+    dest: "{{ user_home }}/.kube/config"
+    owner: "{{ ansible_user | default(ansible_user_id) }}"
+    group: "{{ ansible_user | default(ansible_user_id) }}"
+    mode: 0755
+    remote_src: true
+
+- name: Install the PODs network
+  shell: |
+    kubectl --kubeconfig={{ kubeadmin_config }} \
+      apply -f "{{ user_home }}/{{ flannel_manifest }}"
+  register: pods_network
+
+- name: Pause for 3 minutes to wait for PODs Network
+  pause:
+    minutes: 3
+
+  

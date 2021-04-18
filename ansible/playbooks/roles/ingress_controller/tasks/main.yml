@@ -1,0 +1,25 @@
+---
+
+- name: Copy NGINX Ingress Controller manifest
+  copy:
+    src: "{{ ingress_controller_file }}"
+    dest: "{{ user_home }}/{{ ingress_controller_file }}"
+  register: copy_ingress_controller_file
+
+- name: Apply NGINX Ingress Controller manifest
+  when: copy_ingress_controller_file is succeeded
+  shell: |
+    kubectl --kubeconfig={{ kubeadmin_config }} \
+      create -f "{{ user_home }}/{{ ingress_controller_file }}"
+  register: deploy_ingress_controller_file
+
+- name: Pause for 1 minutes to wait for PODs Network
+  pause:
+    minutes: 1
+
+- name: Patch NGINX Ingress Controller 
+  when: deploy_ingress_controller_file is succeeded
+  shell: |
+    kubectl --kubeconfig={{ kubeadmin_config }} \
+      patch svc ingress-nginx-controller -p '{"spec":{"externalIPs":["{{worker_ip}}"]}}' -n ingress-nginx
+  register: deploy_ingress_controller_file

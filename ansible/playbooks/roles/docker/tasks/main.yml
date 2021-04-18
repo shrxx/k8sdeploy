@@ -1,0 +1,65 @@
+---
+# tasks file for deploy_docker
+- name: Installing Docker
+  block:
+    - name: Uninstalling old versions
+      apt:
+        name:
+          - docker
+          - docker-engine
+          - docker.io
+          - containerd
+          - runc
+        state: absent
+    - name: Update apt-get repo and cache
+      apt: update_cache=yes force_apt_get=yes cache_valid_time=3600
+    - name: Install packages to allow apt to use a repository over HTTPS
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl 
+          - gnupg-agent
+          - software-properties-common
+        state: present
+    - name: Add Docker’s official GPG key
+      apt_key: 
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+    - name: Set up the stable Docker repository
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
+    - name: Update apt-get repo and cache
+      apt: update_cache=yes force_apt_get=yes cache_valid_time=3600
+    - name: Install the latest version of Docker Engine and containerd
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+    - name: Create directory for Docker config
+      file:
+        path: /etc/docker
+        state: directory 
+    - name: Copy Docker config to target server
+      copy:
+        src: daemon.json
+        dest: /etc/docker
+    - name: Create directory for containerd config
+      file:
+        path: /etc/containerd
+        state: directory    
+    - name: Create default config of containerd
+      shell: "containerd config default > /etc/containerd/config.toml"
+    - name: Make neccessary edit in config.toml
+      shell: "sed -i '/systemd_cgroup\ =/ s/=.*/=\ true/' /etc/containerd/config.toml"
+    - name: Restart Docker
+      systemd:
+        name: docker
+        state: restarted
+    - name: Restart Containerd
+      systemd:
+        name: containerd
+        state: restarted
+  when: ansible_os_family == "Debian"

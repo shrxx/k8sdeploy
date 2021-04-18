@@ -1,0 +1,9 @@
+---
+
+dashboard_manifest: "recommended.yaml"
+dashboard_cluster_admin_role: "dashboard_cluster_admin_role.yml"
+dashboard_service_account: "dashboard_service_account.yaml"
+dashboard_ingress: "dashboard_ingress.yaml"
+kubedashboard_url: "https://raw.githubusercontent.com/kubernetes/dashboard/v2.2.0/aio/deploy/recommended.yaml"
+user_home: "/home/{{ ansible_user | default(ansible_user_id) }}"
+kubeadmin_config: "/etc/kubernetes/admin.conf"

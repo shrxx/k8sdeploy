@@ -1,0 +1,33 @@
+---
+
+# [ Role ] Worker
+
+# tasks file for configure_k8s_worker
+# 1. Generate new token
+# kubeadm token create --print-join-command
+# As an output you'll get smth. like this:
+# kubeadm join 192.168.0.50:6443 --token 77prl9.3uzj7acazzsucruu     --discovery-token-ca-cert-hash sha256:62d60855f335e905b1c91cc2537aeafd14fc5a324bdbd2a8f5204f6ac09211c2
+# Check list of tokens
+# kubeadm token list
+# Execute join command on worker node
+# List your cluster nodes
+# kubectl get nodes
+
+
+- name: Check if kubelet.conf exists
+  stat:
+    path: "/etc/kubernetes/kubelet.conf"
+  register: kubelet_conf
+
+- name: "Kubeadmn join"
+  shell: >
+    kubeadm join --token={{ hostvars['K8S_TOKEN_HOLDER']['token'] }}
+    --discovery-token-ca-cert-hash sha256:{{ hostvars['K8S_TOKEN_HOLDER']['hash'] }}
+    {{master_ip}}:6443
+
+- name: Enable and check kubelet service
+  systemd:
+    name: kubelet
+    daemon_reload: yes
+    state: started
+    enabled: yes

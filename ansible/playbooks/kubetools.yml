@@ -1,0 +1,9 @@
+---
+
+- name: Deploying kubetools to kubernetes nodes
+  hosts:
+    - k8s_cluster
+  gather_facts: True
+  become: yes
+  roles:
+    - kubetools

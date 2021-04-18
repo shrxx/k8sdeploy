@@ -1,0 +1,7 @@
+---
+- name: Initializing Master Node
+  hosts: "k8s_cluster"
+  gather_facts: true
+  become: yes
+  roles:
+    - role: master

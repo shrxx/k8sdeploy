@@ -1,0 +1,10 @@
+---
+# [Playbook] Deploy new K8S cluster
+
+- name: Pre-checks, Install Docker and K8S tools
+  hosts:
+    - k8s_cluster
+  gather_facts: True
+  become: yes
+  roles:
+    - pre_checks

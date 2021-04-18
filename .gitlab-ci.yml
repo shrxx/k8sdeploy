@@ -1,0 +1,138 @@
+stages:
+  - test
+  - install_cluster
+  - join_worker
+  - setup_k8s_cluster
+  - install_master
+  - install_pg_cluster
+
+variables:
+
+  ### STATIC VARIABLES
+  SSH_KEY: "ansible/secrets/id_rsa"
+  PLAYBOOKS_PATH: "ansible/playbooks"
+
+  ##################
+  ### IMPORTANT! ###
+  ### 
+  ### CHECK BEFORE RUN
+  ### 
+  ### 1) Inventory file
+  ### 2) Host pattern
+  ### 3) Credentials
+  ### 4) Master Node IP definition 
+
+  #############################################
+  ###                                       ### 
+  ###  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  ###
+  ###  UPDATE MANUALLY BEFORE RUN PIPELINE  ### 
+  ###  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  ### 
+  ###                                       ###
+  #############################################
+
+  ### FLAGS 
+  # TEST: "true"
+  # INSTALL_CLUSTER: "true"
+  # INIT_CLUSTER: "true"
+  # INSTALL_MASTER: "true"
+  # JOIN_WORKER: "true"
+  SETUP_CLUSTER: "true"
+  # INSTALL_PG_CLUSTER: true
+
+  ### INVENTORIES 
+  # INVENTORY: ""
+  INVENTORY: "hosts_lab.ini"
+
+  ### HOSTS PATTERN
+  # EXAMPLE: "217*"
+  # EXAMPLE: "master*"
+  HOSTS_PATTERN: "dc1"
+  
+  ### SSH USER CREDENTIALS
+  USER: "devops"
+  SUDO_PASSWORD: "qweewq"
+  
+  ### MASTER NODE IP
+  MASTER_INIT_IP: "192.168.0.50"
+
+  ### NAMESPACE FOR PG CLUSTER_ROLE
+  PG_NAMESPACE: "pg_cluster1"
+
+  #############################################
+  ###                                       ### 
+  ###  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  ###
+  ###  UPDATE MANUALLY BEFORE RUN PIPELINE  ### 
+  ###  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  ### 
+  ###                                       ###
+  #############################################
+
+image: ansible/ansible-runner:latest
+
+default:
+  before_script:
+    - export ANSIBLE_CONFIG="ansible/ansible.cfg"
+    - chmod 400 $SSH_KEY 
+
+# For checking connectivity
+test:
+  stage: test
+  script:
+    - echo "Test run"
+    - ansible-playbook $PLAYBOOKS_PATH/test.yml -i ansible/$INVENTORY --extra-vars "user=$USER sudo_password=$SUDO_PASSWORD master_ip=$MASTER_INIT_IP" --limit $HOSTS_PATTERN
+  rules:
+    - if: $TEST == "true"
+      when: always
+
+install_cluster:
+  stage: install_cluster
+  script:
+   - echo "Installing tools to VMs"
+   - ansible-playbook $PLAYBOOKS_PATH/prepare_new_vm.yml -i ansible/$INVENTORY --extra-vars "user=$USER sudo_password=$SUDO_PASSWORD" --limit $HOSTS_PATTERN
+   - echo "Initializing master node"
+   - ansible-playbook $PLAYBOOKS_PATH/master.yml -i ansible/$INVENTORY --extra-vars "user=$USER sudo_password=$SUDO_PASSWORD master_ip=$MASTER_INIT_IP" --limit $HOSTS_PATTERN:!*worker*
+   - echo "Joining worker node"
+   - ansible-playbook $PLAYBOOKS_PATH/worker.yml -i ansible/$INVENTORY --extra-vars "user=$USER sudo_password=$SUDO_PASSWORD master_ip=$MASTER_INIT_IP" --limit $HOSTS_PATTERN
+  rules:
+    - if: $INSTALL_CLUSTER == "true"
+      when: always
+
+join_worker:
+  stage: join_worker
+  script:
+    - echo "Installing tools"
+    - ansible-playbook $PLAYBOOKS_PATH/prepare_new_vm.yml -i ansible/$INVENTORY --extra-vars "user=$USER sudo_password=$SUDO_PASSWORD" --limit "$HOSTS_PATTERN:!*master*"
+    - echo "Joining worker node"
+    - ansible-playbook $PLAYBOOKS_PATH/worker.yml -i ansible/$INVENTORY --extra-vars "user=$USER sudo_password=$SUDO_PASSWORD master_ip=$MASTER_INIT_IP" --limit $HOSTS_PATTERN
+  rules:
+    - if: $JOIN_WORKER == "true"
+      when: always
+
+install_master:
+  stage: install_master
+  script:
+    - echo "Installing tools"
+    - ansible-playbook $PLAYBOOKS_PATH/prepare_new_vm.yml -i ansible/$INVENTORY --extra-vars "user=$USER sudo_password=$SUDO_PASSWORD" --limit $HOSTS_PATTERN
+    - echo "Initializing master node"
+    - ansible-playbook $PLAYBOOKS_PATH/master.yml -i ansible/$INVENTORY --extra-vars "user=$USER sudo_password=$SUDO_PASSWORD master_ip=$MASTER_INIT_IP" --limit $HOSTS_PATTERN:!*worker*
+  rules:
+    - if: $INSTALL_MASTER == "true"
+      when: always
+
+setup_k8s_cluster:
+  stage: setup_k8s_cluster
+  script:
+    # - echo "Deploying Dashboard"
+    # - ansible-playbook $PLAYBOOKS_PATH/dashboard.yml -i ansible/$INVENTORY --extra-vars "user=$USER sudo_password=$SUDO_PASSWORD master_ip=$MASTER_INIT_IP" --limit $HOSTS_PATTERN:!*worker*
+    # - echo "Deploying NGINX Ingress Controller"
+    # - ansible-playbook $PLAYBOOKS_PATH/ingress_controller.yml -i ansible/$INVENTORY --extra-vars "user=$USER sudo_password=$SUDO_PASSWORD master_ip=$MASTER_INIT_IP worker_ip=$WORKER_IP" --limit $HOSTS_PATTERN:!*worker*
+  rules:
+    - if: $SETUP_K8S_CLUSTER == "true"
+      when: always
+
+install_pg_cluster:
+  stage: install_pg_cluster
+  script:
+    - echo "Installing HA PG cluster"
+  rules:
+    - if: $INSTALL_PG_CLUSTER == "true"
+      when: always

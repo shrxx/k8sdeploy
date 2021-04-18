@@ -1,0 +1,10 @@
+---
+# [Playbook] Deploy new K8S cluster
+
+- name: Deploying docker to kubernetes nodes
+  hosts:
+    - k8s_cluster
+  gather_facts: True
+  become: yes
+  roles:
+    - docker

@@ -1,0 +1,6 @@
+---
+# defaults file for configure_k8s_master
+user_home: "/home/{{ ansible_user | default(ansible_user_id) }}"
+pod_network_cidr: "10.244.0.0/16"
+flannel_manifest: "kube-flannel.yml"
+kubeadmin_config: "/etc/kubernetes/admin.conf"

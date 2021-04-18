@@ -1,0 +1,43 @@
+---
+# tasks file for check_environment
+- name: Check OS Release
+  assert:
+    that:
+      - ansible_distribution_version == '18.04' or ansible_distribution_version == '20.04'
+    fail_msg: "[FAILED] OS version do not satisfy requirements"
+    success_msg: "[SUCCESS] OS version satisfy requirements"
+
+- name: Check Hostname
+  debug:
+    msg: "{{ ansible_hostname }}"
+
+- name: Check product_uuid
+  command: cat /sys/class/dmi/id/product_uuid
+  register: product_uuid
+
+- debug:
+     msg: "{{ product_uuid.stdout }}"
+
+- name: Check SWAP
+  block:
+    - debug:
+        msg: "[WARNING] SWAP is in use"
+    - name: Disabling SWAP On fly
+      command: swapoff -a
+  when: ansible_swaptotal_mb != 0
+
+# - name: Check RAM
+#   assert:
+#     that:
+#      - ansible_memtotal_mb > 1900
+#     fail_msg: "[FAILED] RAM size is less than minimum required"
+#     success_msg: "[SUCCESS] The host {{ ansible_hostname }} has {{ansible_memtotal_mb}} MB total RAM available"
+
+# - name: Check CPU
+#   assert:
+#     that:
+#      - ansible_processor_cores > 1
+#     fail_msg: "[FAILED] CPU cores count less than minimum required"
+#     success_msg: "[SUCCESS] The host {{ ansible_hostname }} has {{ ansible_processor_cores }} cores of CPU"
+    
+  

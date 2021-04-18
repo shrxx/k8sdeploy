@@ -1,0 +1,16 @@
+---
+# tasks file for test_ping
+#
+- name: Pinging hosts
+  ping:
+
+# - name: Generate token
+#   shell: kubeadm token create --print-join-command
+
+#- name: Get token
+#  shell: kubeadm token list | cut -d ' ' -f1 | sed -n '2p'
+#  register: K8S_TOKEN
+#
+#- name: Print token
+#  debug:
+#    msg: "{{ K8S_TOKEN.stdout }}"

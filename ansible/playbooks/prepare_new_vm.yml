@@ -1,0 +1,10 @@
+---
+- name: Prepare new worker node
+  hosts:
+    - k8s_cluster
+  gather_facts: True
+  become: yes
+  roles:
+    - pre_checks
+    - docker
+    - kubetools

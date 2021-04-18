@@ -1,0 +1,9 @@
+---
+
+- name: NGINX Ingress Controller
+  hosts:
+    - master
+  gather_facts: True
+  become: yes
+  roles:
+    - ingress_controller
